@@ -110,7 +110,7 @@ const Intermission = (() => {
         }
     }
 
-    return ( target ) => {
+    return ( target, state = {  } ) => {
         _removeAnimations()
 
         const div = document.createElement( 'div' )
@@ -121,6 +121,9 @@ const Intermission = (() => {
         const sound = document.createElement( 'audio' )
         div.appendChild( sound )
         sound.src = Asset( 'brb.mp3' )
+        if ( state && state.volume !== undefined ) {
+            sound.volume = state.volume
+        }
         sound.play()
         
         const picture = document.createElement( 'img' )
@@ -238,7 +241,9 @@ const Intermission = (() => {
                 console.log(`\tShowing intermission animation.`)
                 state.intermission = {
                     state: 'active',
-                    handle: Intermission( Youtube.getHTML_videoPlayer() )
+                    handle: Intermission( Youtube.getHTML_videoPlayer(), {
+                        volume: state.userVideoVolume
+                    } )
                 }
                 state.intermission.handle.onReady( _ => {
                     // Animation ready.
