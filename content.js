@@ -236,4 +236,3 @@ const Animate = (() => {
     check()
 })();
 //#endregion
-Animate.Brb( Youtube.getHTML_videoPlayer() )
