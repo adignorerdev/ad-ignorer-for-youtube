@@ -1,5 +1,35 @@
+
 console.log(`Youtube Ad Ignorer active.`)
 const cs_base = 'ad-ignorer'
+
+//#region ***   Logic of managing URL navigations   ***
+const Navigation = (() => {
+
+    let prevUrl = undefined
+    const _checkUrl = () => {
+        const url = window.location.href
+        if ( url !== prevUrl ) {
+            // Navigation happened.
+            _onNavigationSubs.forEach( clbk => clbk( url ) )
+            prevUrl = url
+        }
+    }
+
+    const _onNavigationSubs = []
+    const onNavigation = ( clbk ) => _onNavigationSubs.push( clbk )
+
+    // Schedule initial url check.
+    setTimeout( () => {
+        _checkUrl()
+        // Schedule regular url checks.
+        setInterval( _checkUrl, 1000 )
+    }, 200 )
+
+    return {
+        onNavigation
+    }
+})();
+//#endregion
 
 //#region ***   Logic of reading Youtube HTML   ***
 const Youtube = (() => {
@@ -109,8 +139,8 @@ const Animate = (() => {
             const repositionDiv = () => {
                 if ( target ) {
                     const bounds = target.getBoundingClientRect()
-                    div.style.left = `${ bounds.left }px`
-                    div.style.top = `${ bounds.top }px`
+                    div.style.left = `${ bounds.left + window.scrollX }px`
+                    div.style.top = `${ bounds.top + window.scrollY }px`
                     div.style.width = `${ bounds.width }px`
                     div.style.height = `${ bounds.height }px`
                 }
@@ -144,18 +174,32 @@ const Animate = (() => {
 
     const formatVolume = ( volume ) => `${ (volume * 100).toFixed(1) } %`
 
-    let video
-    while ( !video ) {
-        video = Youtube.getHTML_videoPlayer()
-        await new Promise( resolve => setTimeout( resolve, 100 ) )
-    }
-
-    const state = {
+    let state = {
+        video: undefined,
         advertisement: undefined,
-        userVideoVolume: video.volume,
+        userVideoVolume: undefined,
         intermission: undefined
     }
-    const check = () => {
+
+    Navigation.onNavigation( async url => {
+        state.video = undefined
+
+        // Check for Youtube video url (eq. youtube.com/watch? )
+        if ( ! url.includes('watch?') ) {
+            return
+        }
+
+        // Reset state and find Video element from document.
+        let video
+        while ( !video ) {
+            video = Youtube.getHTML_videoPlayer()
+            await new Promise( resolve => setTimeout( resolve, 100 ) )
+        }
+        state.video = video
+        state.userVideoVolume = video.volume
+    } )
+
+    const iteration = ( video, state ) => {
         const advertisement = Youtube.isAdvertisementPresent()
 
         if ( advertisement ) {
@@ -167,7 +211,7 @@ const Animate = (() => {
 
             // Skip ad whenever possible (but not during intermission).
             const skipButton = Youtube.getHTML_skipAdButton()
-            if ( skipButton && state.intermission === false ) {
+            if ( skipButton && ! state.intermission ) {
                 console.log(`\tSkipping Ad.`)
                 skipButton.click()
             }
@@ -217,9 +261,19 @@ const Animate = (() => {
         }
 
         state.advertisement = advertisement
-        requestAnimationFrame( check )
     }
-    check()
+
+    while ( true ) {
+        if ( state.video ) {
+            // Apply logic.
+            iteration( state.video, state )
+            await new Promise( resolve => requestAnimationFrame( resolve ) )
+
+        } else {
+            // Wait until navigation to Youtube video.
+            await new Promise( resolve => setTimeout( resolve ), 100 )
+        }
+    }
 })();
 //#endregion
 
