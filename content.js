@@ -66,7 +66,7 @@ const Youtube = (() => {
      * Eq. Advertisement that shows below the video.
      */
     const getHTML_overlayAd = () => {
-        return document.getElementsByClassName( 'ytp-ad-image-overlay' )[0]
+        return document.getElementsByClassName( 'ytp-ad-overlay-container' )[0]
     }
 
     /**
