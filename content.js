@@ -97,8 +97,8 @@ const Youtube = (() => {
 })();
 //#endregion
 
-//#region ***   Animations   ***
-const Animate = (() => {
+//#region ***   Transmission logic   ***
+const Intermission = (() => {
     const Asset = ( fileName ) => chrome.extension.getURL(`/assets/${ fileName }`)
     const cs_base_animate = cs_base + '_animation'
 
@@ -110,61 +110,65 @@ const Animate = (() => {
         }
     }
 
-    const Brb = ( target ) => {
-        return new Promise( resolve => {
-            _removeAnimations()
+    return ( target ) => {
+        _removeAnimations()
 
-            const div = document.createElement( 'div' )
-            document.body.appendChild( div )
+        const div = document.createElement( 'div' )
+        document.body.appendChild( div )
+        div.style.opacity = 0
+        div.className = cs_base + ' ' + cs_base_animate + ' ' + cs_base_animate + '_brb'
+
+        const sound = document.createElement( 'audio' )
+        div.appendChild( sound )
+        sound.src = Asset( 'brb.mp3' )
+        sound.play()
+        
+        const picture = document.createElement( 'img' )
+        div.appendChild( picture )
+        picture.style.transform = 'rotateY(90deg)'
+        picture.src = Asset( 'brb.png' )
+
+        // Initial CSS animations.
+        requestAnimationFrame(() => {
+            div.style.opacity = 1
+            picture.style.transform = 'rotateY(0deg)'
+        })
+
+        let animationActive = true
+        const repositionDiv = () => {
+            if ( target ) {
+                const bounds = target.getBoundingClientRect()
+                div.style.left = `${ bounds.left + window.scrollX }px`
+                div.style.top = `${ bounds.top + window.scrollY }px`
+                div.style.width = `${ bounds.width }px`
+                div.style.height = `${ bounds.height }px`
+            }
+            if ( animationActive ) requestAnimationFrame( repositionDiv )
+        }
+        repositionDiv()
+
+        const remove = () => {
             div.style.opacity = 0
-            div.className = cs_base + ' ' + cs_base_animate + ' ' + cs_base_animate + '_brb'
+            setTimeout(() => {
+                div.remove()
+                animationActive = false
+            }, 3000)
+        }
 
-            const sound = document.createElement( 'audio' )
-            div.appendChild( sound )
-            sound.src = Asset( 'brb.mp3' )
-            sound.play()
-            
-            const picture = document.createElement( 'img' )
-            div.appendChild( picture )
-            picture.style.transform = 'rotateY(90deg)'
-            picture.src = Asset( 'brb.png' )
+        let _onReady
+        const onReady = ( clbk ) => _onReady = clbk
+        sound.addEventListener( 'ended', e => _onReady() )
 
-            // Initial CSS animations.
-            requestAnimationFrame(() => {
-                div.style.opacity = 1
-                picture.style.transform = 'rotateY(0deg)'
-            })
+        const setState = ( state ) => {
+            const { paused } = state
+            div.style.opacity = paused ? 0 : 1
+        }
 
-            let animationActive = true
-            const repositionDiv = () => {
-                if ( target ) {
-                    const bounds = target.getBoundingClientRect()
-                    div.style.left = `${ bounds.left + window.scrollX }px`
-                    div.style.top = `${ bounds.top + window.scrollY }px`
-                    div.style.width = `${ bounds.width }px`
-                    div.style.height = `${ bounds.height }px`
-                }
-                if ( animationActive ) requestAnimationFrame( repositionDiv )
-            }
-            repositionDiv()
-
-            const finish = () => {
-                div.style.opacity = 0
-                setTimeout(() => {
-                    div.remove()
-                    animationActive = false
-                }, 3000)
-            }
-
-            sound.addEventListener( 'ended', e => {
-                // Resolve Promise (intermission is ready) and return handle for removing intermission.
-                resolve({ finish })
-            } )
-        } )
-    }
-
-    return {
-        Brb
+        return {
+            remove,
+            setState,
+            onReady
+        }
     }
 })();
 //#endregion
@@ -211,11 +215,17 @@ const Animate = (() => {
 
             // Skip ad whenever possible (but not during intermission).
             const skipButton = Youtube.getHTML_skipAdButton()
-            if ( skipButton && state.intermission !== true ) {
+            if ( skipButton && state.intermission && state.intermission.state === 'ready' ) {
                 console.log(`\tSkipping Ad.`)
                 skipButton.click()
                 // Recheck immediately.
                 advertisement = Youtube.isAdvertisementPresent()
+            }
+
+            if ( state.intermission ) {
+                state.intermission.handle.setState({
+                    paused: video.paused
+                })
             }
         }
 
@@ -226,21 +236,21 @@ const Animate = (() => {
             if ( advertisement ) {
                 // Show intermission animation.
                 console.log(`\tShowing intermission animation.`)
-                state.intermission = true
-                Animate.Brb( Youtube.getHTML_videoPlayer() )
-                    .then( handle => {
-                        // Animation ready.
-                        console.log(`\tIntermission ready. Waiting for ads to end.`)
-                        state.intermission = handle
-                    })
+                state.intermission = {
+                    state: 'active',
+                    handle: Intermission( Youtube.getHTML_videoPlayer() )
+                }
+                state.intermission.handle.onReady( _ => {
+                    // Animation ready.
+                    console.log(`\tIntermission ready. Waiting for ads to end.`)
+                    state.intermission.state = 'ready'
+                })
 
             } else {
                 // Remove intermission if present.
-                if ( state.intermission && typeof state.intermission === 'object' ) {
-                    if ( 'finish' in state.intermission ) {
-                        state.intermission.finish()
-                        console.log(`\tFinish intermission.`)
-                    }
+                if ( state.intermission ) {
+                    state.intermission.handle.remove()
+                    console.log(`\tFinish intermission.`)
                     state.intermission = undefined
                 }
 
