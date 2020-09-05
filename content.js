@@ -118,13 +118,17 @@ const Animate = (() => {
             }
             repositionDiv()
 
-            sound.addEventListener( 'ended', e => {
+            const finish = () => {
                 div.style.opacity = 0
-                resolve()
                 setTimeout(() => {
                     div.remove()
                     animationActive = false
                 }, 3000)
+            }
+
+            sound.addEventListener( 'ended', e => {
+                // Resolve Promise (intermission is ready) and return handle for removing intermission.
+                resolve({ finish })
             } )
         } )
     }
@@ -149,7 +153,7 @@ const Animate = (() => {
     const state = {
         advertisement: undefined,
         userVideoVolume: video.volume,
-        intermission: false
+        intermission: undefined
     }
     const check = () => {
         const advertisement = Youtube.isAdvertisementPresent()
@@ -178,12 +182,23 @@ const Animate = (() => {
                 console.log(`\tShowing intermission animation.`)
                 state.intermission = true
                 Animate.Brb( Youtube.getHTML_videoPlayer() )
-                    .then(() => {
-                        // Animation finished.
-                        state.intermission = false
+                    .then( handle => {
+                        // Animation ready.
+                        console.log(`\tIntermission ready. Waiting for ads to end.`)
+                        state.intermission = handle
                     })
 
             } else {
+                // Remove intermission if present.
+                if ( state.intermission ) {
+                    if ( 'finish' in state.intermission ) {
+                        state.intermission.finish()
+                        console.log(`\tFinish intermission.`)
+                    }
+                    state.intermission = undefined
+                }
+
+                // Restore video volume.
                 const volume = state.userVideoVolume
                 if ( volume !== undefined ) {
                     console.log(`\tRestoring video volume (${ formatVolume( volume ) }).`)
