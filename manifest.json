@@ -13,5 +13,9 @@
       ],
     "web_accessible_resources": [
       "assets/*"
-    ]
+    ],
+    "icons": {
+      "128": "icon_128.png",
+      "48": "icon_48.png"
+    }
   }
