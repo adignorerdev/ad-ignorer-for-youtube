@@ -211,7 +211,7 @@ const Animate = (() => {
 
             // Skip ad whenever possible (but not during intermission).
             const skipButton = Youtube.getHTML_skipAdButton()
-            if ( skipButton && ! state.intermission ) {
+            if ( skipButton && state.intermission !== true ) {
                 console.log(`\tSkipping Ad.`)
                 skipButton.click()
             }
@@ -234,7 +234,7 @@ const Animate = (() => {
 
             } else {
                 // Remove intermission if present.
-                if ( state.intermission ) {
+                if ( state.intermission && typeof state.intermission === 'object' ) {
                     if ( 'finish' in state.intermission ) {
                         state.intermission.finish()
                         console.log(`\tFinish intermission.`)
