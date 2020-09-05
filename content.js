@@ -242,7 +242,7 @@ const Intermission = (() => {
                 state.intermission = {
                     state: 'active',
                     handle: Intermission( Youtube.getHTML_videoPlayer(), {
-                        volume: state.userVideoVolume
+                        volume: state.userVideoVolume * 3 / 5
                     } )
                 }
                 state.intermission.handle.onReady( _ => {
