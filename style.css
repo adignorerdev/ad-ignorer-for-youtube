@@ -12,4 +12,14 @@
 
 .ad-ignorer_animation_brb {
     background-color: #00e001;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.ad-ignorer_animation_brb > img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    transition: transform 1.0s;
 }
