@@ -196,11 +196,11 @@ const Animate = (() => {
             await new Promise( resolve => setTimeout( resolve, 100 ) )
         }
         state.video = video
-        state.userVideoVolume = video.volume
+        state.userVideoVolume = video.volume > 0 ? video.volume : undefined
     } )
 
     const iteration = ( video, state ) => {
-        const advertisement = Youtube.isAdvertisementPresent()
+        let advertisement = Youtube.isAdvertisementPresent()
 
         if ( advertisement ) {
             // Mute video during advertisement.
@@ -214,6 +214,8 @@ const Animate = (() => {
             if ( skipButton && state.intermission !== true ) {
                 console.log(`\tSkipping Ad.`)
                 skipButton.click()
+                // Recheck immediately.
+                advertisement = Youtube.isAdvertisementPresent()
             }
         }
 
@@ -244,7 +246,7 @@ const Animate = (() => {
 
                 // Restore video volume.
                 const volume = state.userVideoVolume
-                if ( volume !== undefined ) {
+                if ( volume !== undefined && volume > 0 ) {
                     console.log(`\tRestoring video volume (${ formatVolume( volume ) }).`)
                     video.volume = volume
                 }
@@ -256,7 +258,7 @@ const Animate = (() => {
             const volume = video.volume
             if ( volume !== state.userVideoVolume ) {
                 console.log(`\tCaching user video volume (${ formatVolume( volume ) }).`)
-                state.userVideoVolume = video.volume
+                state.userVideoVolume = volume
             }
         }
 
