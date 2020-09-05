@@ -309,9 +309,9 @@ const Intermission = (() => {
 
             // If user puts mouse over ad, hide it completely.
             overlayAd.addEventListener( 'mousemove', e => {
-                if ( overlayAd.style.opacity > 0 ) {
+                if ( overlayAd.style.display !== 'none' ) {
                     console.log(`\tCompletely hiding overlay ad.`)
-                    overlayAd.style.opacity = 0
+                    overlayAd.style.display = 'none'
                 }
             } )
         }
