@@ -1,4 +1,5 @@
 console.log(`Youtube Ad Ignorer active.`)
+const cs_base = 'ad-ignorer'
 
 //#region ***   Logic of reading Youtube HTML   ***
 const Youtube = (() => {
@@ -45,6 +46,66 @@ const Youtube = (() => {
 })();
 //#endregion
 
+//#region ***   Animations   ***
+const Animate = (() => {
+    const Asset = ( fileName ) => chrome.extension.getURL(`/assets/${ fileName }`)
+    const cs_base_animate = cs_base + '_animation'
+
+    const _removeAnimations = () => {
+        const divs = [...document.getElementsByClassName( cs_base_animate )]
+            .filter( e => e.tagName.toLowerCase() === 'div' )
+        for ( const div of divs ) {
+            div.remove()
+        }
+    }
+
+    const Brb = ( target ) => {
+        return new Promise( resolve => {
+            _removeAnimations()
+
+            const div = document.createElement( 'div' )
+            document.body.appendChild( div )
+            div.className = cs_base + ' ' + cs_base_animate + ' ' + cs_base_animate + '_brb'
+
+            const sound = document.createElement( 'audio' )
+            div.appendChild( sound )
+            sound.src = Asset( 'brb.mp3' )
+            sound.play()
+            
+            const picture = document.createElement( 'img' )
+            div.appendChild( picture )
+            picture.src = Asset( 'brb.png' )
+
+            let animationActive = true
+            const repositionDiv = () => {
+                if ( target ) {
+                    const bounds = target.getBoundingClientRect()
+                    div.style.left = `${ bounds.left }px`
+                    div.style.top = `${ bounds.top }px`
+                    div.style.width = `${ bounds.width }px`
+                    div.style.height = `${ bounds.height }px`
+                }
+                if ( animationActive ) requestAnimationFrame( repositionDiv )
+            }
+            repositionDiv()
+
+            sound.addEventListener( 'ended', e => {
+                div.style.opacity = 0
+                resolve()
+                setTimeout(() => {
+                    div.remove()
+                    animationActive = false
+                }, 3000)
+            } )
+        } )
+    }
+
+    return {
+        Brb
+    }
+})();
+//#endregion
+
 //#region ***   Observe when advertisements come on   ***
 (async () => {
 
@@ -58,15 +119,16 @@ const Youtube = (() => {
 
     const state = {
         advertisement: undefined,
-        userVideoVolume: video.volume
+        userVideoVolume: video.volume,
+        intermission: false
     }
     const check = () => {
         const advertisement = Youtube.isAdvertisementPresent()
 
         if ( advertisement ) {
-            // Skip ad whenever possible.
+            // Skip ad whenever possible (but not during intermission).
             const skipButton = Youtube.getHTML_skipAdButton()
-            if ( skipButton ) {
+            if ( skipButton && state.intermission === false ) {
                 console.log(`\tSkipping Ad.`)
                 skipButton.click()
             }
@@ -79,6 +141,16 @@ const Youtube = (() => {
             if ( advertisement ) {
                 console.log(`\tMuting video.`)
                 video.volume = 0
+
+                // Show intermission animation.
+                console.log(`\tShowing intermission animation.`)
+                state.intermission = true
+                Animate.Brb( Youtube.getHTML_videoPlayer() )
+                    .then(() => {
+                        // Animation finished.
+                        state.intermission = false
+                    })
+
             } else {
                 const volume = state.userVideoVolume
                 if ( volume !== undefined ) {
@@ -103,13 +175,3 @@ const Youtube = (() => {
     check()
 })();
 //#endregion
-
-// setInterval(() => {
-//     console.log(`video player div: `, Youtube.getHTML_videoPlayerDiv(),
-//     `\nvideo player: `, Youtube.getHTML_videoPlayer(),
-//     `\nskip add button: `, Youtube.getHTML_skipAdButton(),
-//     `\nis add present: `, Youtube.isAdvertisementPresent(),
-//     `\n\n`)
-// }, 3000)
-
-
