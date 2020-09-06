@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Ad-Ignore for Youtube",
-    "version": "0.1.171",
+    "version": "0.1.172",
     "icons": {
       "128": "icon_128.png",
       "48": "icon_48.png"

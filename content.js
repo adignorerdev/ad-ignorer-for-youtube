@@ -302,18 +302,21 @@ const Intermission = (() => {
     const check = () => {
         const overlayAd = Youtube.getHTML_overlayAd()
 
-        if ( overlayAd && state.overlayAd === undefined ) {
-            // Overlay ad appeared hide it just so its "technically still visible".
-            console.log(`\tHiding overlay ad.`)
-            overlayAd.style.opacity = 0.05
+        if ( overlayAd ) {
+            if ( overlayAd !== state.overlayAd ) {
+                // Overlay ad just appeared.
+                console.log(`\tOverlay ad appeared.`)
+                // If user puts mouse over ad, hide it completely.
+                overlayAd.addEventListener( 'mousemove', e => {
+                    if ( overlayAd.style.display !== 'none' ) {
+                        console.log(`\tCompletely hiding overlay ad.`)
+                        overlayAd.style.display = 'none'
+                    }
+                } )
+            }
 
-            // If user puts mouse over ad, hide it completely.
-            overlayAd.addEventListener( 'mousemove', e => {
-                if ( overlayAd.style.display !== 'none' ) {
-                    console.log(`\tCompletely hiding overlay ad.`)
-                    overlayAd.style.display = 'none'
-                }
-            } )
+            // Hide ad so its "technically still visible".
+            overlayAd.style.opacity = 0.05
         }
 
         state.overlayAd = overlayAd
