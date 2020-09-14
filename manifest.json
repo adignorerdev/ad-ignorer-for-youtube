@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Ad-Ignore for Youtube",
     "description": "Extension for *ignoring* Youtube advertisements. Shows a fun little intermission animation while advertisements are playing.",
-    "version": "0.1.172",
+    "version": "0.1.173",
     "icons": {
       "128": "icon_128.png",
       "48": "icon_48.png"
