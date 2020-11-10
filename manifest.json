@@ -18,6 +18,7 @@
         }
       ],
     "web_accessible_resources": [
-      "assets/*"
+      "assets/*",
+      "squirrel.js"
     ]
   }

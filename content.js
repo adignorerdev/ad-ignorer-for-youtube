@@ -1,6 +1,14 @@
 
 console.log(`Youtube Ad Ignorer active.`)
 const cs_base = 'ad-ignorer'
+const Asset = ( fileName ) => chrome.extension.getURL(`/assets/${ fileName }`)
+
+let Squirrel
+;(async () => {
+    const modulePath = chrome.extension.getURL('squirrel.js')
+    const module = await import(modulePath)
+    Squirrel = module.Squirrel
+})();
 
 //#region ***   Logic of managing URL navigations   ***
 const Navigation = (() => {
@@ -99,7 +107,6 @@ const Youtube = (() => {
 
 //#region ***   Transmission logic   ***
 const Intermission = (() => {
-    const Asset = ( fileName ) => chrome.extension.getURL(`/assets/${ fileName }`)
     const cs_base_animate = cs_base + '_animation'
 
     const _removeAnimations = () => {
@@ -160,11 +167,30 @@ const Intermission = (() => {
 
         let _onReady
         const onReady = ( clbk ) => _onReady = clbk
-        sound.addEventListener( 'ended', e => _onReady() )
+        const checkReady = () => {
+            if ( soundReady && ! squirrelActive ) {
+                _onReady()
+            }
+        }
+        let soundReady = false
+        sound.addEventListener( 'ended', e => { soundReady = true; checkReady() } )
 
         const setState = ( state ) => {
             const { paused } = state
             div.style.opacity = paused ? 0 : 1
+        }
+
+        const showSquirrel = Math.random() >= 0.90
+        let squirrelActive = showSquirrel
+        if ( showSquirrel && Squirrel ) {
+            console.log(`\tENTER SQUIRREL`)
+            setTimeout(() => {
+                const squirrel = new Squirrel( div, Asset )
+                squirrel.onOver(() => {
+                    squirrelActive = false
+                    checkReady()
+                })
+            }, 1000 )
         }
 
         return {
